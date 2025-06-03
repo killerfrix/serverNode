@@ -25,24 +25,18 @@ class TaskManager {
   }
 
   addTask(title, description) {
-    if (!title.trim() || !description.trim()) {
-      console.log('❌ El título y la descripción no pueden estar vacíos.');
-      return;
-    }
-  
     const task = {
       id: this.tasks.length + 1,
-      title: title.trim(),
-      description: description.trim(),
+      title: title,
+      description: description,
       status: 'Pending',
       createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
     };
-  
+    
     this.tasks.push(task);
     this.saveTasks();
-    console.log(`✅ Tarea '${task.title}' agregada correctamente.`);
+    console.log(`Task '${title}' added successfully!`);
   }
-  
 
   listTasks() {
     if (this.tasks.length === 0) {
