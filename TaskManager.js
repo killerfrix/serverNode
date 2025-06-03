@@ -8,35 +8,41 @@ class TaskManager {
     this.loadTasks();
   }
 
-  loadTasks() {
-    if (fs.existsSync(this.fileName)) {
-      try {
-        const data = fs.readFileSync(this.fileName, 'utf8');
-        this.tasks = JSON.parse(data);
-      } catch (error) {
-        console.log('Error loading task data. Starting with empty task list.');
-        this.tasks = [];
+loadTasks() {
+  if (fs.existsSync(this.fileName)) {
+    try {
+      const data = fs.readFileSync(this.fileName, 'utf8');
+      this.tasks = JSON.parse(data);
+      if (this.tasks.length > 0) {
+        this.nextId = Math.max(...this.tasks.map(t => t.id)) + 1;
       }
+    } catch (error) {
+      console.log('Error loading task data. Starting with empty task list.');
+      this.tasks = [];
     }
   }
+}
+
 
   saveTasks() {
     fs.writeFileSync(this.fileName, JSON.stringify(this.tasks));
   }
 
-  addTask(title, description) {
-    const task = {
-      id: this.tasks.length + 1,
-      title: title,
-      description: description,
-      status: 'Pending',
-      createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
-    };
-    
-    this.tasks.push(task);
-    this.saveTasks();
-    console.log(`Task '${title}' added successfully!`);
-  }
+addTask(title, description) {
+  const task = {
+    id: this.nextId++,
+    title,
+    description,
+    status: 'Pending',
+    createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
+  };
+
+  this.tasks.push(task);
+  this.saveTasks();
+  console.log(`Task '${title}' added successfully!`);
+}
+
+
 
   listTasks() {
     if (this.tasks.length === 0) {
