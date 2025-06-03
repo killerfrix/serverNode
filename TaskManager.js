@@ -11,11 +11,21 @@ class TaskManager {
   loadTasks() {
     if (fs.existsSync(this.fileName)) {
       try {
+        // Hacer respaldo antes de leer
+        fs.copyFileSync(this.fileName, `${this.fileName}.bak`);
+  
         const data = fs.readFileSync(this.fileName, 'utf8');
         this.tasks = JSON.parse(data);
       } catch (error) {
-        console.log('Error loading task data. Starting with empty task list.');
-        this.tasks = [];
+        console.log('⚠ Error al cargar tasks.json. Intentando recuperar desde el respaldo...');
+        try {
+          const backupData = fs.readFileSync(`${this.fileName}.bak`, 'utf8');
+          this.tasks = JSON.parse(backupData);
+          console.log('✅ Recuperado con éxito desde tasks.json.bak');
+        } catch (backupError) {
+          console.log('❌ No se pudo recuperar. Lista de tareas vacía.');
+          this.tasks = [];
+        }
       }
     }
   }
