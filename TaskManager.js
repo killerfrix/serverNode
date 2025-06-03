@@ -128,9 +128,23 @@ async function main() {
       taskManager.listTasks();
     }
     else if (choice === '3') {
-      const taskId = parseInt(await prompt('Enter task ID to mark as complete: '));
+      const idInput = await prompt('Enter task ID to mark as complete: ');
+      const taskId = parseInt(idInput);
+
+      if (isNaN(taskId)) {
+        console.log('Invalid task ID. Please enter a number.');
+        continue;
+      }
+
+      const exists = taskManager.tasks.some(task => task.id === taskId);
+      if (!exists) {
+        console.log(`Task with ID ${taskId} not found.`);
+        continue;
+      }
+
       taskManager.markComplete(taskId);
     }
+
     else if (choice === '4') {
       const taskId = parseInt(await prompt('Enter task ID to delete: '));
       taskManager.deleteTask(taskId);
