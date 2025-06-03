@@ -11,14 +11,24 @@ class TaskManager {
   loadTasks() {
     if (fs.existsSync(this.fileName)) {
       try {
+        // Make backup before reading
+        fs.copyFileSync(this.fileName, `${this.fileName}.bak`);
+  
         const data = fs.readFileSync(this.fileName, 'utf8');
         this.tasks = JSON.parse(data);
       } catch (error) {
-        console.log('Error loading task data. Starting with empty task list.');
-        this.tasks = [];
+        console.log('Error loading tasks.json. Trying to recover from backup...');
+        try {
+          const backupData = fs.readFileSync(`${this.fileName}.bak`, 'utf8');
+          this.tasks = JSON.parse(backupData);
+          console.log('Recovered successfully from tasks.json.bak');
+        } catch (backupError) {
+          console.log('No backup found. Empty task list.');
+          this.tasks = [];
+        }
       }
     }
-  }
+  }  
 
   saveTasks() {
     fs.writeFileSync(this.fileName, JSON.stringify(this.tasks));
@@ -142,4 +152,4 @@ async function main() {
 main().catch(error => {
   console.error('An error occurred:', error);
   rl.close();
-});
+}); 
