@@ -12,39 +12,51 @@ class TaskManager {
 loadTasks() {
   if (fs.existsSync(this.fileName)) {
     try {
+        // Make backup before reading
+        fs.copyFileSync(this.fileName, `${this.fileName}.bak`);
+  
       const data = fs.readFileSync(this.fileName, 'utf8');
       this.tasks = JSON.parse(data);
       if (this.tasks.length > 0) {
         this.nextId = Math.max(...this.tasks.map(t => t.id)) + 1;
       }
     } catch (error) {
-      console.log('Error loading task data. Starting with empty task list.');
-      this.tasks = [];
+      console.log('Error loading tasks.json. Trying to recover from backup...');
+        try {
+          const backupData = fs.readFileSync(`${this.fileName}.bak`, 'utf8');
+          this.tasks = JSON.parse(backupData);
+          console.log('Recovered successfully from tasks.json.bak');
+        } catch (backupError) {
+          console.log('No backup found. Empty task list.');
+        this.tasks = [];
+        }
     }
   }
-}
+}  
 
 
   saveTasks() {
     fs.writeFileSync(this.fileName, JSON.stringify(this.tasks));
   }
 
-  // changed loadTasks
-addTask(title, description) {
-  const task = {
-    id: this.nextId++,
-    title,
-    description,
-    status: 'Pending',
-    createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
-  };
-
-  this.tasks.push(task);
-  this.saveTasks();
-  console.log(`Task '${title}' added successfully!`);
-}
-
-
+  addTask(title, description) {
+    if (!title.trim() || !description.trim()) {
+      console.log('Title and description cannot be empty.');
+      return;
+    }
+  
+    const task = {
+      id: this.tasks.length + 1,
+      title: title.trim(),
+      description: description.trim(),
+      status: 'Pending',
+      createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    };
+  
+    this.tasks.push(task);
+    this.saveTasks();
+    console.log(`Task '${task.title}' added successfully!`);
+  }  
 
   listTasks() {
     if (this.tasks.length === 0) {
@@ -186,4 +198,4 @@ async function main() {
 main().catch(error => {
   console.error('An error occurred:', error);
   rl.close();
-});
+}); 
