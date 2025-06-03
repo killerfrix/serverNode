@@ -80,7 +80,7 @@ deleteTask(taskId) {
       ...task,
       id: index + 1
     }));
-
+  //funciona
     this.saveTasks();
     console.log(`Task '${removed.title}' deleted successfully!`);
   } else {
