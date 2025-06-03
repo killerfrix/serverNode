@@ -7,7 +7,8 @@ class TaskManager {
     this.fileName = 'tasks.json';
     this.loadTasks();
   }
-
+  
+  // changed load tasks
 loadTasks() {
   if (fs.existsSync(this.fileName)) {
     try {
@@ -28,6 +29,7 @@ loadTasks() {
     fs.writeFileSync(this.fileName, JSON.stringify(this.tasks));
   }
 
+  // changed loadTasks
 addTask(title, description) {
   const task = {
     id: this.nextId++,
