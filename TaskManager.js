@@ -77,25 +77,25 @@ addTask(title, description) {
     console.log(`Task with ID ${taskId} not found.`);
   }
 
-deleteTask(taskId) {
-  const index = this.tasks.findIndex(task => task.id === taskId);
+  deleteTask(taskId) {
+    const index = this.tasks.findIndex(task => task.id === taskId);
 
-  if (index !== -1) {
-    const removed = this.tasks.splice(index, 1)[0];
+    if (index !== -1) {
+      const removed = this.tasks.splice(index, 1)[0];
 
-    // Esta parte reasigna las IDs de todas las tareas
-    this.tasks = this.tasks.map((task, index) => ({
-      ...task,
-      id: index + 1
-    }));
-  //funciona
-    this.saveTasks();
-    console.log(`Task '${removed.title}' deleted successfully!`);
-  } else {
-    console.log(`Task with ID ${taskId} not found.`);
+      // Esta parte reasigna las IDs de todas las tareas
+      this.tasks = this.tasks.map((task, index) => ({
+        ...task,
+        id: index + 1
+      }));
+    //funciona
+      this.saveTasks();
+      console.log(`Task '${removed.title}' deleted successfully!`);
+    } else {
+      console.log(`Task with ID ${taskId} not found.`);
+    }
   }
 }
-
 
 // Create readline interface for user input
 const rl = readline.createInterface({
