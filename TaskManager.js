@@ -1,5 +1,7 @@
-const pool = require('./db');
 const fs = require('fs');
+const readline = require('readline');
+const pool = require('./db');
+
 
 
 class TaskManager {
@@ -12,63 +14,13 @@ class TaskManager {
     const result = await pool.query(query, [title, description]);
     console.log(`Task '${result.rows[0].title}' added successfully!`);
   }
-  
-  // changed load tasks
-loadTasks() {
-  if (fs.existsSync(this.fileName)) {
-    try {
-        // Make backup before reading
-        fs.copyFileSync(this.fileName, `${this.fileName}.bak`);
-  
-      const data = fs.readFileSync(this.fileName, 'utf8');
-      this.tasks = JSON.parse(data);
-      if (this.tasks.length > 0) {
-        this.nextId = Math.max(...this.tasks.map(t => t.id)) + 1;
-      }
-    } catch (error) {
-      console.log('Error loading tasks.json. Trying to recover from backup...');
-        try {
-          const backupData = fs.readFileSync(`${this.fileName}.bak`, 'utf8');
-          this.tasks = JSON.parse(backupData);
-          console.log('Recovered successfully from tasks.json.bak');
-        } catch (backupError) {
-          console.log('No backup found. Empty task list.');
-        this.tasks = [];
-        }
-    }
-  }
-}  
-
-
-  saveTasks() {
-    fs.writeFileSync(this.fileName, JSON.stringify(this.tasks));
-  }
-
-  addTask(title, description) {
-    if (!title.trim() || !description.trim()) {
-      console.log('Title and description cannot be empty.');
-      return;
-    }
-  
-    const task = {
-      id: this.tasks.length + 1,
-      title: title.trim(),
-      description: description.trim(),
-      status: 'Pending',
-      createdDate: new Date().toISOString().replace('T', ' ').substring(0, 19)
-    };
-  
-    this.tasks.push(task);
-    this.saveTasks();
-    console.log(`Task '${task.title}' added successfully!`);
-  }  
 
   async listTasks() {
     const result = await pool.query('SELECT * FROM tasks ORDER BY id');
     const tasks = result.rows;
 
 
-    if (this.tasks.length === 0) {
+    if (tasks.length === 0) {
       console.log('No tasks found.');
       return;
     }
@@ -84,36 +36,33 @@ loadTasks() {
     console.log('='.repeat(80) + '\n');
   }
 
-  markComplete(taskId) {
-    for (const task of this.tasks) {
-      if (task.id === taskId) {
-        task.status = 'Completed';
-        this.saveTasks();
-        console.log(`Task '${task.title}' marked as completed!`);
-        return;
-      }
-    }
-    console.log(`Task with ID ${taskId} not found.`);
-  }
+  async markComplete(taskId) {
+    const result = await pool.query(
+      'UPDATE tasks SET status = $1 WHERE id = $2 RETURNING *',
+      ['Completed', taskId]
+    );
 
-  deleteTask(taskId) {
-    const index = this.tasks.findIndex(task => task.id === taskId);
-
-    if (index !== -1) {
-      const removed = this.tasks.splice(index, 1)[0];
-
-      // Esta parte reasigna las IDs de todas las tareas
-      this.tasks = this.tasks.map((task, index) => ({
-        ...task,
-        id: index + 1
-      }));
-    //funciona
-      this.saveTasks();
-      console.log(`Task '${removed.title}' deleted successfully!`);
-    } else {
+    if (result.rowCount === 0) {
       console.log(`Task with ID ${taskId} not found.`);
+    } else {
+      console.log(`Task '${result.rows[0].title}' marked as completed!`);
     }
   }
+
+
+    async deleteTask(taskId) {
+    const result = await pool.query(
+      'DELETE FROM tasks WHERE id = $1 RETURNING *',
+      [taskId]
+    );
+
+    if (result.rowCount === 0) {
+      console.log(`Task with ID ${taskId} not found.`);
+    } else {
+      console.log(`Task '${result.rows[0].title}' deleted successfully!`);
+    }
+  }
+
 }
 
 // Create readline interface for user input
@@ -134,7 +83,7 @@ function prompt(question) {
 // Main application function
 async function main() {
   const taskManager = new TaskManager();
-  
+
   while (true) {
     console.log('\nTASK MANAGER');
     console.log('1. Add Task');
@@ -142,18 +91,19 @@ async function main() {
     console.log('3. Mark Task as Complete');
     console.log('4. Delete Task');
     console.log('5. Exit');
-    
+
     const choice = await prompt('Enter your choice (1-5): ');
-    
+
     if (choice === '1') {
       const title = await prompt('Enter task title: ');
       const description = await prompt('Enter task description: ');
-      taskManager.addTask(title, description);
-    }
+      await taskManager.addTask(title, description);
+    } 
+    
     else if (choice === '2') {
-      taskManager.listTasks();
-    }
-    // changed choice 3
+      await taskManager.listTasks(); 
+    } 
+    
     else if (choice === '3') {
       const idInput = await prompt('Enter task ID to mark as complete: ');
       const taskId = parseInt(idInput);
@@ -163,15 +113,9 @@ async function main() {
         continue;
       }
 
-      const exists = taskManager.tasks.some(task => task.id === taskId);
-      if (!exists) {
-        console.log(`Task with ID ${taskId} not found.`);
-        continue;
-      }
-
-      taskManager.markComplete(taskId);
-    }
-    // changed choice 4
+      await taskManager.markComplete(taskId); 
+    } 
+    
     else if (choice === '4') {
       const idInput = await prompt('Enter task ID to delete: ');
       const taskId = parseInt(idInput);
@@ -181,25 +125,21 @@ async function main() {
         continue;
       }
 
-      const exists = taskManager.tasks.some(task => task.id === taskId);
-      if (!exists) {
-        console.log(`Task with ID ${taskId} not found.`);
-        continue;
-      }
-
-      taskManager.deleteTask(taskId);
-    }
-
+      await taskManager.deleteTask(taskId); 
+    } 
+    
     else if (choice === '5') {
       console.log('Exiting Task Manager. Goodbye!');
       rl.close();
       break;
-    }
+    } 
+    
     else {
       console.log('Invalid choice. Please try again.');
     }
   }
 }
+
 
 // Run the application
 main().catch(error => {
