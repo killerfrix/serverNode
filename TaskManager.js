@@ -1,11 +1,16 @@
+const pool = require('./db');
 const fs = require('fs');
-const readline = require('readline');
+
 
 class TaskManager {
-  constructor() {
-    this.tasks = [];
-    this.fileName = 'tasks.json';
-    this.loadTasks();
+  async addTask(title, description) {
+    const query = `
+    INSERT INTO tasks (title, description)
+    VALUES ($1, $2)
+    RETURNING *`;
+
+    const result = await pool.query(query, [title, description]);
+    console.log(`Task '${result.rows[0].title}' added successfully!`);
   }
   
   // changed load tasks
@@ -58,7 +63,11 @@ loadTasks() {
     console.log(`Task '${task.title}' added successfully!`);
   }  
 
-  listTasks() {
+  async listTasks() {
+    const result = await pool.query('SELECT * FROM tasks ORDER BY id');
+    const tasks = result.rows;
+
+
     if (this.tasks.length === 0) {
       console.log('No tasks found.');
       return;
@@ -67,13 +76,11 @@ loadTasks() {
     console.log('\n' + '='.repeat(80));
     console.log(`${'ID'.padEnd(5)} ${'TITLE'.padEnd(20)} ${'STATUS'.padEnd(10)} ${'CREATED DATE'.padEnd(20)} ${'DESCRIPTION'.padEnd(30)}`);
     console.log('-'.repeat(80));
-
-    for (const task of this.tasks) {
+    for (const task of tasks) {
       console.log(
-        `${String(task.id).padEnd(5)} ${task.title.substring(0, 18).padEnd(20)} ${task.status.padEnd(10)} ${task.createdDate.padEnd(20)} ${task.description.substring(0, 28).padEnd(30)}`
+        `${String(task.id).padEnd(5)} ${task.title.substring(0, 18).padEnd(20)} ${task.status.padEnd(10)} ${task.created_date.toISOString().substring(0, 19).replace('T', ' ')} ${task.description.substring(0, 28).padEnd(30)}`
       );
     }
-    
     console.log('='.repeat(80) + '\n');
   }
 
